@@ -3,7 +3,11 @@ declare(strict_types=1);
 
 namespace Falgun\Reporter;
 
-class ProdReporter
+class ProdReporter extends DevReporter
 {
-    //put your code here
+
+    public function isReportable(): bool
+    {
+        return false;
+    }
 }
