@@ -11,6 +11,15 @@ class ProdReporter implements ReporterInterface
         return false;
     }
 
+    /**
+     * @param mixed $details
+     * @return void
+     */
+    public function addSqlDetails($details): void
+    {
+        return;
+    }
+
     public function getCurrentController(): string
     {
         return '';
@@ -36,37 +45,27 @@ class ProdReporter implements ReporterInterface
         return 0.00;
     }
 
-    public function pushToMemoryStack(string $key, $value = false): void
+    public function setCurrentController(string $controller): void
     {
         return;
     }
 
-    public function setCurrentController(string $controller)
+    public function setCurrentMethod(string $model): void
     {
         return;
     }
 
-    public function setCurrentMethod(string $model)
+    public function setCurrentTemplate(string $templateName): void
     {
         return;
     }
 
-    public function setCurrentTemplate(string $templateName)
+    public function setCurrentView(string $view): void
     {
         return;
     }
 
-    public function setCurrentView(string $view)
-    {
-        return;
-    }
-
-    public function showReport()
-    {
-        return;
-    }
-
-    public function sqlDetails($details)
+    public function showReport(): void
     {
         return;
     }

@@ -3,21 +3,18 @@ declare(strict_types=1);
 
 namespace Falgun\Reporter;
 
-class DevReporter implements ReporterInterface
+use Falgun\Http\RequestInterface;
+
+final class DevReporter implements ReporterInterface
 {
 
-    protected Report $report;
+    private Report $report;
+    private RequestInterface $request;
 
-    public function __construct()
+    public function __construct(RequestInterface $request, float $startTime, float $startMemory)
     {
-        $startTime = \microtime(true);
-        $startMemory = $this->memoryUsage();
-
-        $this->report = new Report();
-        $this->report->startTime = $startTime;
-        $this->report->startMemory = $startMemory;
-
-        $this->pushToMemoryStack('init', $startMemory);
+        $this->request = $request;
+        $this->report = new Report($startTime, $startMemory);
     }
 
     public function memoryUsage(): float
@@ -25,73 +22,67 @@ class DevReporter implements ReporterInterface
         return \round(\memory_get_peak_usage(false) / 1024 / 1024, 2);
     }
 
-    public function pushToMemoryStack(string $key, $value = false): void
-    {
-        if ($value === false) {
-            $value = $this->memoryUsage();
-        }
-
-        $this->report->memoryUsage[] = array('class' => $key, 'memory' => $value);
-    }
-
-    public function sqlDetails($details)
+    /**
+     * @param mixed $details
+     * @return void
+     */
+    public function addSqlDetails($details): void
     {
         $this->report->dbQueries[] = $details;
     }
 
-    public function setCurrentController(string $controller)
+    public function setCurrentController(string $controller): void
     {
         $this->report->currentController = $controller;
     }
 
-    public function setCurrentMethod(string $model)
+    public function setCurrentMethod(string $model): void
     {
         $this->report->currentMethod = $model;
     }
 
-    public function setCurrentTemplate(string $templateName)
+    public function setCurrentTemplate(string $templateName): void
     {
         $this->report->currentTemplate = $templateName;
     }
 
-    public function setCurrentView(string $view)
+    public function setCurrentView(string $view): void
     {
         $this->report->currentViewFile = $view;
     }
 
     public function getCurrentController(): string
     {
-        return $this->report->currentController ?? '';
+        return $this->report->currentController;
     }
 
     public function getCurrentMethod(): string
     {
-        return $this->report->currentMethod ?? '';
+        return $this->report->currentMethod;
     }
 
     public function getCurrentTemplate(): string
     {
-        return $this->report->currentTemplate ?? '';
+        return $this->report->currentTemplate;
     }
 
     public function getCurrentView(): string
     {
-        return $this->report->currentViewFile ?? '';
+        return $this->report->currentViewFile;
     }
 
     public function isReportable(): bool
     {
-        return (\strtoupper($_SERVER['REQUEST_METHOD'] ?? '') === 'GET' &&
-            (\strpos(\strtolower($_SERVER['HTTP_ACCEPT'] ?? ''), 'text/html') !== false) &&
-            \strpos(\php_sapi_name(), 'cli') === false);
+        return ($this->request->getMethod() === 'GET' &&
+            (\strpos(\strtolower($this->request->serverDatas()->get('HTTP_ACCEPT', '')), 'text/html') !== false));
     }
 
-    protected function getReportTemplate(): string
+    private function getReportTemplate(): string
     {
         return \file_get_contents(__DIR__ . '/stub/viewReport.tpl');
     }
 
-    protected function populateReportTemplate(string $template, array $properties): string
+    private function populateReportTemplate(string $template, array $properties): string
     {
         $propertyKeys = \array_map(function ($value) {
             return '{{' . $value . '}}';
@@ -101,16 +92,15 @@ class DevReporter implements ReporterInterface
         return \str_replace($propertyKeys, $propertyValues, $template);
     }
 
-    public function showReport()
+    public function showReport(): void
     {
 
         if ($this->isReportable() === false) {
-            return false;
+            return;
         }
 
         $properties = (array) $this->report;
 
-        $properties['memoryUsage'] = \json_encode($properties['memoryUsage']);
         $properties['dbQueries'] = \json_encode($properties['dbQueries'] ?? []);
         $properties['additionalResources'] = \json_encode($properties['additionalResources'] ?? []);
 

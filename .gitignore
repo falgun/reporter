@@ -1,3 +1,5 @@
 /vendor
-# ignore lock file since we have no extra dependencies
+/build
 composer.lock
+.phpunit.result.cache
+infection.log
